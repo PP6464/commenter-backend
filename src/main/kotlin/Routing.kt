@@ -4,6 +4,7 @@ import app.web.commenter_api.schemas.*
 import app.web.commenter_api.utils.*
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -45,6 +46,36 @@ fun Application.configureRouting(userDao : UserDao) {
 					code = 201,
 					payload = user
 				)
+			)
+		}
+		
+		post("/login") {
+			val userData = call.receive<LoginBody>()
+			
+			val user = userDao.getUserByEmail(userData.email) ?: throw NotFoundException("User not found")
+			
+			if (!verifyPassword(userData.password, user.passwordHash)) {
+				throw InvalidDetailsException("Incorrect password")
+			}
+			
+			val jwt = generateJWT(user.uid)
+			
+			call.response.cookies.append(
+				name = "jwt",
+				value = jwt,
+				path = "/",
+				httpOnly = true,
+				secure = true,
+				maxAge = 86400,
+			)
+			
+			call.respond(
+				status = HttpStatusCode.OK,
+				message = UserResponseBody(
+					message = "User logged in successfully",
+					code = 200,
+					payload = user,
+				),
 			)
 		}
 	}

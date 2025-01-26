@@ -51,6 +51,7 @@ fun userFromRow(row : ResultRow) = User(
 interface UserDao {
 	suspend fun allUsers() : List<User>
 	suspend fun getUser(id : UUID) : User?
+	suspend fun getUserByEmail(email : String) : User?
 	suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User?
 	suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?) : Boolean
 	suspend fun disableUser(id : UUID) : Boolean
@@ -65,6 +66,10 @@ class UserDaoImpl : UserDao {
 	
 	override suspend fun getUser(id : UUID) = dbQuery {
 		Users.selectAll().where { Users.id eq id }.map(::userFromRow).singleOrNull()
+	}
+	
+	override suspend fun getUserByEmail(email : String) : User? = dbQuery {
+		Users.selectAll().where { Users.email eq email }.map(::userFromRow).singleOrNull()
 	}
 	
 	override suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User? = dbQuery {

@@ -7,6 +7,7 @@ import app.web.commenter_api.utils.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
@@ -45,7 +46,6 @@ fun Application.module() {
 				return@exception
 			}
 			if (cause is InvalidFieldException) {
-				// A field has been deemed invalid
 				call.respond(
 					status = HttpStatusCode.NotAcceptable,
 					message = NoPayloadResponseBody(
@@ -65,6 +65,24 @@ fun Application.module() {
 					)
 					return@exception
 				}
+			}
+			if (cause is NotFoundException) {
+				call.respond(
+					status = HttpStatusCode.NotFound,
+					message = NoPayloadResponseBody(
+						code = 404,
+						message = cause.message!!,
+					),
+				)
+			}
+			if (cause is InvalidDetailsException) {
+				call.respond(
+					status = HttpStatusCode.NotAcceptable,
+					message = NoPayloadResponseBody(
+						message = cause.message,
+						code = 406,
+					),
+				)
 			}
 			call.respond(
 				status = HttpStatusCode.InternalServerError,
