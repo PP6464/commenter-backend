@@ -30,9 +30,8 @@ fun validateJWT(jwt : String) : UUID? {
 			.verifyWith(hmacShaKeyFor(dotenv["JWT_SECRET"]!!.toByteArray()))
 			.build()
 			.parseSignedClaims(jwt)
-			.payload
-			.subject
-		return UUID.fromString(uidString)
+			.payload["uid"] ?: throw InvalidDetailsException("JWT is invalid")
+		return UUID.fromString(uidString.toString())
 	} catch (e : ExpiredJwtException) {
 		return null
 	} catch (e : Exception) {

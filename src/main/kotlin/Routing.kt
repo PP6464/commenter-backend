@@ -55,7 +55,11 @@ fun Application.configureRouting(userDao : UserDao) {
 			val user = userDao.getUserByEmail(userData.email) ?: throw NotFoundException("User not found")
 			
 			if (!verifyPassword(userData.password, user.passwordHash)) {
-				throw InvalidDetailsException("Incorrect password")
+				throw InvalidDetailsException("Incorrect details")
+			}
+			
+			if (user.disabled) {
+				throw InvalidDetailsException("This account is disabled")
 			}
 			
 			val jwt = generateJWT(user.uid)
@@ -73,6 +77,25 @@ fun Application.configureRouting(userDao : UserDao) {
 				status = HttpStatusCode.OK,
 				message = UserResponseBody(
 					message = "User logged in successfully",
+					code = 200,
+					payload = user,
+				),
+			)
+		}
+		
+		get("/re-auth") {
+			val jwt = call.request.cookies["jwt"] ?: throw InvalidDetailsException("JWT is missing")
+			val uid = validateJWT(jwt) ?: run {
+				println("Expired")
+				throw InvalidDetailsException("JWT is expired")
+			}
+			
+			val user = userDao.getUser(uid) ?: throw NotFoundException("The user is not found")
+			
+			call.respond(
+				status = HttpStatusCode.OK,
+				message = UserResponseBody(
+					message = "Re-authenticated successfully",
 					code = 200,
 					payload = user,
 				),
