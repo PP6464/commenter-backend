@@ -35,6 +35,7 @@ fun Application.module() {
 	
 	install(StatusPages) {
 		exception<Throwable> { call, cause ->
+			println("ERROR - PATH: ${call.request.path()}, METHOD: ${call.request.httpMethod}, CAUSE: ${cause.message}")
 			if (cause.message!!.contains("Failed to convert request body")) {
 				call.respond(
 					status = HttpStatusCode.BadRequest,
