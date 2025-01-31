@@ -55,7 +55,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			val user = userDao.getUserByEmail(userData.email) ?: throw NotFoundException("User not found")
 			
 			if (!verifyPassword(userData.password, user.passwordHash)) {
-				throw InvalidDetailsException("Incorrect details")
+				throw InvalidDetailsException("Incorrect password")
 			}
 			
 			if (user.disabled) {
