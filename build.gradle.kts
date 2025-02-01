@@ -39,6 +39,7 @@ dependencies {
 	implementation(libs.jjwt.impl)
 	implementation(libs.jjwt.jackson)
 	implementation(libs.status.pages)
+	implementation(libs.ktor.logging)
 	testImplementation(libs.ktor.server.test.host)
 	testImplementation(libs.kotlin.test.junit)
 }

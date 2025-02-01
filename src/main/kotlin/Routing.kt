@@ -26,6 +26,10 @@ fun Application.configureRouting(userDao : UserDao) {
 				throw InvalidFieldException("Display name is too long")
 			}
 			
+			if (userData.displayName.isEmpty()) {
+				throw InvalidFieldException("Display name cannot be empty")
+			}
+			
 			val emailRegex = Regex("[-\\w.]+@[\\w-]+\\.[\\w-]+")
 			
 			if (!emailRegex.matches(userData.email)) {
@@ -35,7 +39,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			val passwordHash = hashPassword(userData.password)
 			
 			val user = userDao.addNewUser(userData.displayName, userData.email, passwordHash)!!
-				
+			
 			val jwt = generateJWT(user.uid)
 			
 			call.response.cookies.append("jwt", jwt, maxAge = 86400, httpOnly = true, secure = true, path = "/")
@@ -99,6 +103,25 @@ fun Application.configureRouting(userDao : UserDao) {
 					code = 200,
 					payload = user,
 				),
+			)
+		}
+		
+		post("/logout") {
+			call.response.cookies.append(
+				name = "jwt",
+				value = "",
+				path = "/",
+				httpOnly = true,
+				secure = true,
+				maxAge = 0,
+			)
+			
+			call.respond(
+				status = HttpStatusCode.OK,
+				message = NoPayloadResponseBody(
+					message = "Logged out successfully",
+					code = 200,
+				)
 			)
 		}
 	}
