@@ -40,6 +40,8 @@ dependencies {
 	implementation(libs.jjwt.jackson)
 	implementation(libs.status.pages)
 	implementation(libs.ktor.logging)
+	implementation(libs.firebase.admin)
+	implementation(libs.koin)
 	testImplementation(libs.ktor.server.test.host)
 	testImplementation(libs.kotlin.test.junit)
 }

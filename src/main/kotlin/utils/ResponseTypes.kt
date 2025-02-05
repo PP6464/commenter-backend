@@ -15,3 +15,10 @@ data class UserResponseBody(
 	val code : Int,
 	val payload : User? = null,
 )
+
+@Serializable
+data class TextBody(
+	val message : String,
+	val code : Int,
+	val payload : String,
+)

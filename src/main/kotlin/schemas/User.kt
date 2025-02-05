@@ -18,19 +18,6 @@ data class User(
 	val disabled : Boolean,
 )
 
-@Serializable
-data class SignUpBody(
-	val email: String,
-	val password: String,
-	val displayName : String,
-)
-
-@Serializable
-data class LoginBody(
-	val email: String,
-	val password: String,
-)
-
 object Users : UUIDTable(name = "users") {
 	val displayName = varchar("display_name", 20)
 	val email = text("email").uniqueIndex()

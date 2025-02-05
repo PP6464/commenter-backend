@@ -1,20 +1,76 @@
 package app.web.commenter_api
 
 import app.web.commenter_api.schemas.*
+import app.web.commenter_api.storage.*
 import app.web.commenter_api.utils.*
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.*
+import org.koin.ktor.ext.*
 
 fun Application.configureRouting(userDao : UserDao) {
+	val storageService by inject<StorageService>()
+	
 	routing {
 		get("/") {
 			call.respondText("Hello World!")
 		}
+		// Storage
+		post("/upload-profile-pic") {
+			val jwt = call.request.cookies["jwt"] ?: throw InvalidDetailsException("JWT is missing")
+			val uid = validateJWT(jwt) ?: throw InvalidDetailsException("JWT is expired")
+			userDao.getUser(uid) ?: throw NotFoundException("The user is not found")
+			
+			val multipart = call.receiveMultipart()
+			var file : ByteArray? = null
+			var extension : String? = null
+			var contentType : String? = null
+			val allowedMimeTypes = listOf("image/png", "image/jpeg", "image/webp", "image/avif", "image/tiff")
+			
+			multipart.forEachPart { part ->
+				when (part) {
+					is PartData.FileItem -> {
+						extension = part.originalFileName?.substringAfterLast(".", "") ?: throw InvalidDetailsException("File has no name")
+						contentType = part.contentType?.toString() ?: throw InvalidDetailsException("File is missing content type")
+						file = part.provider().toByteArray()
+					}
+					else -> {}
+				}
+				
+				part.dispose()
+			}
+			
+			if (file == null) {
+				throw InvalidDetailsException("Missing file to upload")
+			}
+			
+			if (contentType !in allowedMimeTypes) {
+				throw InvalidMediaException("File is of an unsupported image type")
+			}
+			
+			if (file!!.size > 2 * 1024 * 1024) {
+				throw PayloadSizeException("File exceeds 2MB limit")
+			}
+			
+			storageService.deleteDir("users/$uid")
+			val url = storageService.upload("users/$uid/profile-pic.$extension", file!!, contentType!!)
+			
+			call.respond(
+				status = HttpStatusCode.Created,
+				message = TextBody(
+					message = "Successfully uploaded image",
+					code = 201,
+					payload = url,
+				),
+			)
+		}
 		
+		// Auth
 		post("/sign-up") {
 			val userData = call.receive<SignUpBody>()
 			
@@ -89,11 +145,7 @@ fun Application.configureRouting(userDao : UserDao) {
 		
 		get("/re-auth") {
 			val jwt = call.request.cookies["jwt"] ?: throw InvalidDetailsException("JWT is missing")
-			val uid = validateJWT(jwt) ?: run {
-				println("Expired")
-				throw InvalidDetailsException("JWT is expired")
-			}
-			
+			val uid = validateJWT(jwt) ?: throw InvalidDetailsException("JWT is expired")
 			val user = userDao.getUser(uid) ?: throw NotFoundException("The user is not found")
 			
 			call.respond(

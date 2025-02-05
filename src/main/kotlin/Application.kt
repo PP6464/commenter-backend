@@ -3,6 +3,7 @@
 package app.web.commenter_api
 
 import app.web.commenter_api.schemas.*
+import app.web.commenter_api.storage.*
 import app.web.commenter_api.utils.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -14,6 +15,9 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import org.koin.core.module.dsl.*
+import org.koin.dsl.*
+import org.koin.ktor.plugin.*
 import org.slf4j.event.*
 
 fun main(args : Array<String>) {
@@ -97,6 +101,33 @@ fun Application.module() {
 					),
 				)
 			}
+			if (cause is InsufficientPermissionException) {
+				call.respond(
+					status = HttpStatusCode.Forbidden,
+					message = NoPayloadResponseBody(
+						message = cause.message,
+						code = 403,
+					),
+				)
+			}
+			if (cause is PayloadSizeException) {
+				call.respond(
+					status = HttpStatusCode.PayloadTooLarge,
+					message = NoPayloadResponseBody(
+						message = cause.message,
+						code = 413,
+					),
+				)
+			}
+			if (cause is InvalidMediaException) {
+				call.respond(
+					status = HttpStatusCode.UnsupportedMediaType,
+					message = NoPayloadResponseBody(
+						message = cause.message,
+						code = 415,
+					)
+				)
+			}
 			call.respond(
 				status = HttpStatusCode.InternalServerError,
 				message = NoPayloadResponseBody(
@@ -105,6 +136,14 @@ fun Application.module() {
 				)
 			)
 		}
+	}
+	
+	val appModule = module {
+		singleOf(::StorageService)
+	}
+	
+	install(Koin) {
+		modules(appModule)
 	}
 	
 	val userDao = UserDaoImpl()
