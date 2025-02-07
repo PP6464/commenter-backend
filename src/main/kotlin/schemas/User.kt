@@ -1,6 +1,7 @@
 package app.web.commenter_api.schemas
 
 import app.web.commenter_api.dbQuery
+import app.web.commenter_api.utils.*
 import kotlinx.serialization.*
 import org.jetbrains.exposed.dao.id.*
 import org.jetbrains.exposed.sql.*
@@ -40,7 +41,7 @@ interface UserDao {
 	suspend fun getUser(id : UUID) : User?
 	suspend fun getUserByEmail(email : String) : User?
 	suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User?
-	suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?) : Boolean
+	suspend fun updateUser(id : UUID, displayName : String? = null, email : String? = null, passwordHash : String? = null, pic : String? = null) : Boolean
 	suspend fun disableUser(id : UUID) : Boolean
 	suspend fun enableUser(id : UUID) : Boolean
 	suspend fun deleteUser(id : UUID) : Boolean
@@ -70,21 +71,24 @@ class UserDaoImpl : UserDao {
 		} catch (e: PSQLException) {
 			if (e.sqlState == "23505") {
 				// Email already used
-				throw Exception("Email already in use")
+				throw ConflictException("Email already in use")
 			} else {
 				throw(e)
 			}
 		}
 	}
 	
-	override suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?) : Boolean =
+	override suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?, pic : String?) : Boolean =
 		dbQuery {
 			val currentValues = getUser(id)!!
+			
+			if (displayName?.length?.let { it > 20 } == true) throw InvalidDetailsException("Display name too long")
 			
 			Users.update({ Users.id eq id }) {
 				it[Users.displayName] = displayName ?: currentValues.displayName
 				it[Users.email] = email ?: currentValues.email
 				it[Users.passwordHash] = passwordHash ?: currentValues.passwordHash
+				it[Users.pic] = pic ?: currentValues.pic
 			} > 0
 		}
 	

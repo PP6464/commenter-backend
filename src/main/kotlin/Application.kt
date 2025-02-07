@@ -71,17 +71,15 @@ fun Application.module() {
 					),
 				)
 			}
-			if (call.request.path().contains("sign-up")) {
-				if (cause.message!!.lowercase().contains("email")) {
-					call.respond(
-						status = HttpStatusCode.Conflict,
-						message = NoPayloadResponseBody(
-							message = "Email already in use",
-							code = 409,
-						)
+			if (cause is ConflictException) {
+				call.respond(
+					status = HttpStatusCode.Conflict,
+					message = NoPayloadResponseBody(
+						message = cause.message,
+						code = 409,
 					)
-					return@exception
-				}
+				)
+				return@exception
 			}
 			if (cause is NotFoundException) {
 				call.respond(
@@ -126,6 +124,15 @@ fun Application.module() {
 						message = cause.message,
 						code = 415,
 					)
+				)
+			}
+			if (cause is AssertionError) {
+				call.respond(
+					status = HttpStatusCode.allStatusCodes.single { it.value == cause.message!!.split(": ")[0].toInt() },
+					message = NoPayloadResponseBody(
+						message = cause.message!!.split(": ")[1],
+						code = cause.message!!.split(": ")[0].toInt(),
+					),
 				)
 			}
 			call.respond(

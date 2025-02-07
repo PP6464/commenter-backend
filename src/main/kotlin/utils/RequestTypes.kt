@@ -16,6 +16,11 @@ data class LoginBody(
 )
 
 @Serializable
-data class UploadRequest(
-	val path : String,
+data class ProfileUpdateBody(
+	val uid : String,
+	val displayName : String? = null,
+	val email : String? = null,
+	val password : String? = null,
+	val pic : String? = null,
+	val hasPicFile : Boolean = false,
 )

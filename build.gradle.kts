@@ -44,4 +44,5 @@ dependencies {
 	implementation(libs.koin)
 	testImplementation(libs.ktor.server.test.host)
 	testImplementation(libs.kotlin.test.junit)
+	implementation(kotlin("test"))
 }

@@ -11,7 +11,9 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
+import kotlinx.serialization.json.*
 import org.koin.ktor.ext.*
+import kotlin.test.*
 
 fun Application.configureRouting(userDao : UserDao) {
 	val storageService by inject<StorageService>()
@@ -20,54 +22,101 @@ fun Application.configureRouting(userDao : UserDao) {
 		get("/") {
 			call.respondText("Hello World!")
 		}
-		// Storage
-		post("/upload-profile-pic") {
+		
+		// Profile
+		post("/update-profile") {
 			val jwt = call.request.cookies["jwt"] ?: throw InvalidDetailsException("JWT is missing")
 			val uid = validateJWT(jwt) ?: throw InvalidDetailsException("JWT is expired")
-			userDao.getUser(uid) ?: throw NotFoundException("The user is not found")
+			val user = userDao.getUser(uid) ?: throw NotFoundException("The user is not found")
+			
+			if (user.disabled) {
+				call.respond(
+					status = HttpStatusCode.Forbidden,
+					message = NoPayloadResponseBody(
+						message = "This account is disabled",
+						code = 403,
+					),
+				)
+				return@post
+			}
 			
 			val multipart = call.receiveMultipart()
+			// File
 			var file : ByteArray? = null
 			var extension : String? = null
 			var contentType : String? = null
 			val allowedMimeTypes = listOf("image/png", "image/jpeg", "image/webp", "image/avif", "image/tiff")
+			// Profile
+			var updateInfo : ProfileUpdateBody? = null
 			
 			multipart.forEachPart { part ->
 				when (part) {
 					is PartData.FileItem -> {
-						extension = part.originalFileName?.substringAfterLast(".", "") ?: throw InvalidDetailsException("File has no name")
-						contentType = part.contentType?.toString() ?: throw InvalidDetailsException("File is missing content type")
+						assertEquals("file", part.name, "406: The file part has been incorrectly named")
 						file = part.provider().toByteArray()
+						contentType = part.contentType?.toString() ?: throw InvalidDetailsException("File is missing but file body part declared")
+						if (contentType !in allowedMimeTypes) throw InvalidMediaException("Unsupported file type")
+						extension = part.originalFileName?.substringAfterLast(".", "") ?: throw InvalidDetailsException("File has no name")
+					}
+					is PartData.FormItem -> {
+						assertEquals("info", part.name, "406: The json body part has been incorrectly named")
+						updateInfo = Json.decodeFromString<ProfileUpdateBody>(part.value)
+						if (updateInfo!!.uid != user.uid) {
+							throw ConflictException("UIDs supplied do not match")
+						}
 					}
 					else -> {}
 				}
 				
-				part.dispose()
+				part.dispose
 			}
 			
-			if (file == null) {
-				throw InvalidDetailsException("Missing file to upload")
+			val updated : Boolean
+			
+			if (updateInfo!!.hasPicFile) {
+				assertNotEquals(null, file, "406: Picture declared in json body but not supplied")
+				
+				if (file!!.size > 2 * 1024 * 1024) {
+					throw PayloadSizeException("Profile picture must not exceed 2MB in size")
+				}
+				
+				storageService.deleteDir("users/$uid")
+				val url = storageService.upload("users/$uid/profile-pic.${extension!!}", file!!, contentType!!)
+				updated = userDao.updateUser(
+					id = uid,
+					displayName = updateInfo!!.displayName,
+					email = updateInfo!!.email,
+					passwordHash = updateInfo!!.password?.let { hashPassword(it) },
+					pic = url,
+				)
+			} else {
+				updated = userDao.updateUser(
+					id = uid,
+					displayName = updateInfo!!.displayName,
+					email = updateInfo!!.email,
+					passwordHash = updateInfo!!.password?.let { hashPassword(it) },
+					pic = updateInfo!!.pic,
+				)
 			}
 			
-			if (contentType !in allowedMimeTypes) {
-				throw InvalidMediaException("File is of an unsupported image type")
+			if (updated) {
+				call.respond(
+					status = HttpStatusCode.OK,
+					message = UserResponseBody(
+						code = 200,
+						message = "Profile successfully updated",
+						payload = userDao.getUser(uid),
+					),
+				)
+			} else {
+				call.respond(
+					status = HttpStatusCode.InternalServerError,
+					message = NoPayloadResponseBody(
+						code = 500,
+						message = "Profile did not update"
+					)
+				)
 			}
-			
-			if (file!!.size > 2 * 1024 * 1024) {
-				throw PayloadSizeException("File exceeds 2MB limit")
-			}
-			
-			storageService.deleteDir("users/$uid")
-			val url = storageService.upload("users/$uid/profile-pic.$extension", file!!, contentType!!)
-			
-			call.respond(
-				status = HttpStatusCode.Created,
-				message = TextBody(
-					message = "Successfully uploaded image",
-					code = 201,
-					payload = url,
-				),
-			)
 		}
 		
 		// Auth

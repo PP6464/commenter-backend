@@ -9,3 +9,5 @@ class InsufficientPermissionException(override val message : String) : Exception
 class PayloadSizeException(override val message : String) : Exception()
 
 class InvalidMediaException(override val message : String) : Exception()
+
+class ConflictException(override val message : String) : Exception()
