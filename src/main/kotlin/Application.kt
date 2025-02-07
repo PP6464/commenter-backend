@@ -55,7 +55,7 @@ fun Application.module() {
 			if (cause.message!!.contains("Failed to convert request body")) {
 				call.respond(
 					status = HttpStatusCode.BadRequest,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = "Invalid body",
 						code = 400,
 					)
@@ -65,7 +65,7 @@ fun Application.module() {
 			if (cause is InvalidFieldException) {
 				call.respond(
 					status = HttpStatusCode.NotAcceptable,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 406,
 					),
@@ -74,7 +74,7 @@ fun Application.module() {
 			if (cause is ConflictException) {
 				call.respond(
 					status = HttpStatusCode.Conflict,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 409,
 					)
@@ -84,7 +84,7 @@ fun Application.module() {
 			if (cause is NotFoundException) {
 				call.respond(
 					status = HttpStatusCode.NotFound,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						code = 404,
 						message = cause.message!!,
 					),
@@ -93,7 +93,7 @@ fun Application.module() {
 			if (cause is InvalidDetailsException) {
 				call.respond(
 					status = HttpStatusCode.NotAcceptable,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 406,
 					),
@@ -102,7 +102,7 @@ fun Application.module() {
 			if (cause is InsufficientPermissionException) {
 				call.respond(
 					status = HttpStatusCode.Forbidden,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 403,
 					),
@@ -111,7 +111,7 @@ fun Application.module() {
 			if (cause is PayloadSizeException) {
 				call.respond(
 					status = HttpStatusCode.PayloadTooLarge,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 413,
 					),
@@ -120,7 +120,7 @@ fun Application.module() {
 			if (cause is InvalidMediaException) {
 				call.respond(
 					status = HttpStatusCode.UnsupportedMediaType,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message,
 						code = 415,
 					)
@@ -129,7 +129,7 @@ fun Application.module() {
 			if (cause is AssertionError) {
 				call.respond(
 					status = HttpStatusCode.allStatusCodes.single { it.value == cause.message!!.split(": ")[0].toInt() },
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = cause.message!!.split(": ")[1],
 						code = cause.message!!.split(": ")[0].toInt(),
 					),
@@ -137,7 +137,7 @@ fun Application.module() {
 			}
 			call.respond(
 				status = HttpStatusCode.InternalServerError,
-				message = NoPayloadResponseBody(
+				message = EmptyResponse(
 					code = 500,
 					message = "Internal Server Error",
 				)

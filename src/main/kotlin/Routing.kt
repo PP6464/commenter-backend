@@ -32,7 +32,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			if (user.disabled) {
 				call.respond(
 					status = HttpStatusCode.Forbidden,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						message = "This account is disabled",
 						code = 403,
 					),
@@ -104,7 +104,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			if (updated) {
 				call.respond(
 					status = HttpStatusCode.OK,
-					message = UserResponseBody(
+					message = UserResponse(
 						code = 200,
 						message = "Profile successfully updated",
 						payload = userDao.getUser(uid),
@@ -113,7 +113,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			} else {
 				call.respond(
 					status = HttpStatusCode.InternalServerError,
-					message = NoPayloadResponseBody(
+					message = EmptyResponse(
 						code = 500,
 						message = "Profile did not update"
 					)
@@ -152,7 +152,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			call.response.cookies.append("jwt", jwt, maxAge = 86400, httpOnly = true, secure = true, path = "/")
 			call.respond(
 				status = HttpStatusCode.Created,
-				message = UserResponseBody(
+				message = UserResponse(
 					message = "Created user successfully",
 					code = 201,
 					payload = user
@@ -186,7 +186,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			
 			call.respond(
 				status = HttpStatusCode.OK,
-				message = UserResponseBody(
+				message = UserResponse(
 					message = "User logged in successfully",
 					code = 200,
 					payload = user,
@@ -201,7 +201,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			
 			call.respond(
 				status = HttpStatusCode.OK,
-				message = UserResponseBody(
+				message = UserResponse(
 					message = "Re-authenticated successfully",
 					code = 200,
 					payload = user,
@@ -221,7 +221,7 @@ fun Application.configureRouting(userDao : UserDao) {
 			
 			call.respond(
 				status = HttpStatusCode.OK,
-				message = NoPayloadResponseBody(
+				message = EmptyResponse(
 					message = "Logged out successfully",
 					code = 200,
 				)
