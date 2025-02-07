@@ -16,6 +16,7 @@ data class User(
 	val email : String,
 	@Transient val passwordHash : String = "",
 	val pic : String,
+	val status : String,
 	val disabled : Boolean,
 )
 
@@ -25,6 +26,7 @@ object Users : UUIDTable(name = "users") {
 	val passwordHash = text("password_hash")
 	val pic = text("pic")
 	val disabled = bool("disabled").default(false)
+	val status = text("status")
 }
 
 fun userFromRow(row : ResultRow) = User(
@@ -34,6 +36,7 @@ fun userFromRow(row : ResultRow) = User(
 	passwordHash = row[Users.passwordHash],
 	pic = row[Users.pic],
 	disabled = row[Users.disabled],
+	status = row[Users.status],
 )
 
 interface UserDao {
@@ -41,7 +44,7 @@ interface UserDao {
 	suspend fun getUser(id : UUID) : User?
 	suspend fun getUserByEmail(email : String) : User?
 	suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User?
-	suspend fun updateUser(id : UUID, displayName : String? = null, email : String? = null, passwordHash : String? = null, pic : String? = null) : Boolean
+	suspend fun updateUser(id : UUID, displayName : String? = null, email : String? = null, passwordHash : String? = null, pic : String? = null, status : String? = null) : Boolean
 	suspend fun disableUser(id : UUID) : Boolean
 	suspend fun enableUser(id : UUID) : Boolean
 	suspend fun deleteUser(id : UUID) : Boolean
@@ -78,7 +81,7 @@ class UserDaoImpl : UserDao {
 		}
 	}
 	
-	override suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?, pic : String?) : Boolean =
+	override suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?, pic : String?, status : String?) : Boolean =
 		dbQuery {
 			val currentValues = getUser(id)!!
 			
@@ -89,6 +92,7 @@ class UserDaoImpl : UserDao {
 				it[Users.email] = email ?: currentValues.email
 				it[Users.passwordHash] = passwordHash ?: currentValues.passwordHash
 				it[Users.pic] = pic ?: currentValues.pic
+				it[Users.status] = status ?: currentValues.status
 			} > 0
 		}
 	

@@ -88,6 +88,7 @@ fun Application.configureRouting(userDao : UserDao) {
 					email = updateInfo!!.email,
 					passwordHash = updateInfo!!.password?.let { hashPassword(it) },
 					pic = url,
+					status = updateInfo!!.status,
 				)
 			} else {
 				updated = userDao.updateUser(
@@ -96,6 +97,7 @@ fun Application.configureRouting(userDao : UserDao) {
 					email = updateInfo!!.email,
 					passwordHash = updateInfo!!.password?.let { hashPassword(it) },
 					pic = updateInfo!!.pic,
+					status = updateInfo!!.status,
 				)
 			}
 			

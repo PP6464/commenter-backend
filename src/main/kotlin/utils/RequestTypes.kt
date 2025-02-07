@@ -22,5 +22,6 @@ data class ProfileUpdateBody(
 	val email : String? = null,
 	val password : String? = null,
 	val pic : String? = null,
-	val hasPicFile : Boolean = false,
+	val status: String? = null,
+	val hasPicFile : Boolean = false
 )
