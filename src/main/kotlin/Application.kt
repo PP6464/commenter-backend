@@ -30,7 +30,7 @@ fun Application.module() {
 		format { call ->
 			val status = call.response.status()!!.value
 			val path = call.request.path()
-			val method = call.request.httpMethod
+			val method = call.request.httpMethod.value
 			return@format "$status $path $method"
 		}
 	}
@@ -51,7 +51,7 @@ fun Application.module() {
 	
 	install(StatusPages) {
 		exception<Throwable> { call, cause ->
-			println("ERROR - PATH: ${call.request.path()}, METHOD: ${call.request.httpMethod}, CAUSE: ${cause.message}")
+			println("ERROR - PATH: ${call.request.path()}, METHOD: ${call.request.httpMethod.value}, CAUSE: ${cause.message}")
 			if (cause.message!!.contains("Failed to convert request body")) {
 				call.respond(
 					status = HttpStatusCode.BadRequest,

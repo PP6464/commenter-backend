@@ -26,7 +26,7 @@ object Users : UUIDTable(name = "users") {
 	val passwordHash = text("password_hash")
 	val pic = text("pic")
 	val disabled = bool("disabled").default(false)
-	val status = text("status")
+	val status = varchar("status", 50)
 }
 
 fun userFromRow(row : ResultRow) = User(
@@ -86,6 +86,8 @@ class UserDaoImpl : UserDao {
 			val currentValues = getUser(id)!!
 			
 			if (displayName?.length?.let { it > 20 } == true) throw InvalidDetailsException("Display name too long")
+			if (displayName?.isEmpty() == true) throw InvalidDetailsException("Display name cannot be empty")
+			if (status?.let { it.length > 50 } == true) throw InvalidDetailsException("Status is too long")
 			
 			Users.update({ Users.id eq id }) {
 				it[Users.displayName] = displayName ?: currentValues.displayName

@@ -54,32 +54,57 @@ fun Application.configureRouting(userDao : UserDao) {
 					is PartData.FileItem -> {
 						assertEquals("file", part.name, "406: The file part has been incorrectly named")
 						file = part.provider().toByteArray()
-						contentType = part.contentType?.toString() ?: throw InvalidDetailsException("File is missing but file body part declared")
+						if (file!!.size > 2 * 1024 * 1024) {
+							throw PayloadSizeException("Profile picture must not exceed 2MB in size")
+						}
+						contentType = part.contentType?.toString()
+							?: throw InvalidDetailsException("File is missing but file body part declared")
 						if (contentType !in allowedMimeTypes) throw InvalidMediaException("Unsupported file type")
-						extension = part.originalFileName?.substringAfterLast(".", "") ?: throw InvalidDetailsException("File has no name")
+						extension =
+							part.originalFileName?.substringAfterLast(".", "") ?: throw InvalidDetailsException("File has no name")
 					}
+					
 					is PartData.FormItem -> {
 						assertEquals("info", part.name, "406: The json body part has been incorrectly named")
 						updateInfo = Json.decodeFromString<ProfileUpdateBody>(part.value)
+						
 						if (updateInfo!!.uid != user.uid) {
 							throw ConflictException("UIDs supplied do not match")
 						}
+						
+						if (updateInfo!!.displayName?.isEmpty() == true) {
+							throw InvalidDetailsException("Display name cannot be empty")
+						}
+						
+						if (updateInfo!!.displayName?.length?.let { it > 20 } == true) {
+							throw InvalidDetailsException("Display name is too long")
+						}
+						
+						if (updateInfo!!.password?.let { it.length < 10 } == true) {
+							throw InvalidDetailsException("Password is too short")
+						}
+						
+						if (updateInfo!!.status?.let { it.length > 50 } == true) {
+							throw InvalidDetailsException("Status is too long")
+						}
+						
+						val emailRegex = Regex("[-\\w.]+@[\\w-]+\\.[\\w-]+")
+						
+						if (updateInfo!!.email?.let { emailRegex.matches(it) } == false) {
+							throw InvalidDetailsException("Email is incorrectly formatted")
+						}
 					}
+					
 					else -> {}
 				}
 				
-				part.dispose
+				part.dispose()
 			}
 			
 			val updated : Boolean
 			
 			if (updateInfo!!.hasPicFile) {
 				assertNotEquals(null, file, "406: Picture declared in json body but not supplied")
-				
-				if (file!!.size > 2 * 1024 * 1024) {
-					throw PayloadSizeException("Profile picture must not exceed 2MB in size")
-				}
-				
 				storageService.deleteDir("users/$uid")
 				val url = storageService.upload("users/$uid/profile-pic.${extension!!}", file!!, contentType!!)
 				updated = userDao.updateUser(
