@@ -6,6 +6,7 @@ build/
 .env
 *.credentials.json
 data/
+.kotlin
 
 ### STS ###
 .apt_generated
