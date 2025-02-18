@@ -17,6 +17,7 @@ import kotlin.test.*
 
 fun Application.configureRouting(userDao : UserDao) {
 	val storageService by inject<StorageService>()
+	val domain = "game-repeatedly-glowworm.ngrok-free.app" // Change for prod
 	
 	routing {
 		get("/") {
@@ -174,7 +175,15 @@ fun Application.configureRouting(userDao : UserDao) {
 			
 			val jwt = generateJWT(user.uid)
 			
-			call.response.cookies.append("jwt", jwt, maxAge = 86400, httpOnly = true, secure = true, path = "/")
+			call.response.cookies.append(
+				name = "jwt",
+				value = jwt,
+				maxAge = 86400,
+				httpOnly = true,
+				secure = true,
+				path = "/",
+				domain = domain,
+			)
 			call.respond(
 				status = HttpStatusCode.Created,
 				message = UserResponse(
@@ -207,6 +216,7 @@ fun Application.configureRouting(userDao : UserDao) {
 				httpOnly = true,
 				secure = true,
 				maxAge = 86400,
+				domain = domain,
 			)
 			
 			call.respond(
@@ -242,6 +252,7 @@ fun Application.configureRouting(userDao : UserDao) {
 				httpOnly = true,
 				secure = true,
 				maxAge = 0,
+				domain = domain,
 			)
 			
 			call.respond(
