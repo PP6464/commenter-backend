@@ -1,12 +1,12 @@
 package app.web.commenter_api.schemas
 
-import app.web.commenter_api.dbQuery
+import app.web.commenter_api.*
 import app.web.commenter_api.utils.*
 import kotlinx.serialization.*
 import org.jetbrains.exposed.dao.id.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.postgresql.util.PSQLException
+import org.postgresql.util.*
 import java.util.*
 
 @Serializable
@@ -20,7 +20,7 @@ data class User(
 	val disabled : Boolean,
 )
 
-object Users : UUIDTable(name = "users") {
+object UsersTable : UUIDTable(name = "users") {
 	val displayName = varchar("display_name", 20)
 	val email = text("email").uniqueIndex()
 	val passwordHash = text("password_hash")
@@ -30,13 +30,13 @@ object Users : UUIDTable(name = "users") {
 }
 
 fun userFromRow(row : ResultRow) = User(
-	uid = row[Users.id].toString(),
-	displayName = row[Users.displayName].toString(),
-	email = row[Users.email],
-	passwordHash = row[Users.passwordHash],
-	pic = row[Users.pic],
-	disabled = row[Users.disabled],
-	status = row[Users.status],
+	uid = row[UsersTable.id].toString(),
+	displayName = row[UsersTable.displayName].toString(),
+	email = row[UsersTable.email],
+	passwordHash = row[UsersTable.passwordHash],
+	pic = row[UsersTable.pic],
+	disabled = row[UsersTable.disabled],
+	status = row[UsersTable.status],
 )
 
 interface UserDao {
@@ -44,44 +44,61 @@ interface UserDao {
 	suspend fun getUser(id : UUID) : User?
 	suspend fun getUserByEmail(email : String) : User?
 	suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User?
-	suspend fun updateUser(id : UUID, displayName : String? = null, email : String? = null, passwordHash : String? = null, pic : String? = null, status : String? = null) : Boolean
+	suspend fun updateUser(
+		id : UUID,
+		displayName : String? = null,
+		email : String? = null,
+		passwordHash : String? = null,
+		pic : String? = null,
+		status : String? = null
+	) : Boolean
+	
 	suspend fun disableUser(id : UUID) : Boolean
 	suspend fun enableUser(id : UUID) : Boolean
 	suspend fun deleteUser(id : UUID) : Boolean
 }
 
 class UserDaoImpl : UserDao {
+	private val blankPicURL = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+	
 	override suspend fun allUsers() : List<User> = dbQuery {
-		Users.selectAll().map(::userFromRow)
+		UsersTable.selectAll().map(::userFromRow)
 	}
 	
 	override suspend fun getUser(id : UUID) = dbQuery {
-		Users.selectAll().where { Users.id eq id }.map(::userFromRow).singleOrNull()
+		UsersTable.selectAll().where { UsersTable.id eq id }.map(::userFromRow).singleOrNull()
 	}
 	
 	override suspend fun getUserByEmail(email : String) : User? = dbQuery {
-		Users.selectAll().where { Users.email eq email }.map(::userFromRow).singleOrNull()
+		UsersTable.selectAll().where { UsersTable.email eq email }.map(::userFromRow).singleOrNull()
 	}
 	
 	override suspend fun addNewUser(displayName : String, email : String, passwordHash : String) : User? = dbQuery {
 		return@dbQuery try {
-			Users.insert {
-				it[Users.displayName] = displayName
-				it[Users.email] = email
-				it[Users.passwordHash] = passwordHash
-				it[pic] = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+			UsersTable.insert {
+				it[UsersTable.displayName] = displayName
+				it[UsersTable.email] = email
+				it[UsersTable.passwordHash] = passwordHash
+				it[pic] = blankPicURL
 			}.resultedValues?.map(::userFromRow)?.singleOrNull()
-		} catch (e: PSQLException) {
+		} catch (e : PSQLException) {
 			if (e.sqlState == "23505") {
 				// Email already used
 				throw ConflictException("Email already in use")
 			} else {
-				throw(e)
+				throw (e)
 			}
 		}
 	}
 	
-	override suspend fun updateUser(id : UUID, displayName : String?, email : String?, passwordHash : String?, pic : String?, status : String?) : Boolean =
+	override suspend fun updateUser(
+		id : UUID,
+		displayName : String?,
+		email : String?,
+		passwordHash : String?,
+		pic : String?,
+		status : String?
+	) : Boolean =
 		dbQuery {
 			val currentValues = getUser(id)!!
 			
@@ -89,28 +106,28 @@ class UserDaoImpl : UserDao {
 			if (displayName?.isEmpty() == true) throw InvalidDetailsException("Display name cannot be empty")
 			if (status?.let { it.length > 50 } == true) throw InvalidDetailsException("Status is too long")
 			
-			Users.update({ Users.id eq id }) {
-				it[Users.displayName] = displayName ?: currentValues.displayName
-				it[Users.email] = email ?: currentValues.email
-				it[Users.passwordHash] = passwordHash ?: currentValues.passwordHash
-				it[Users.pic] = pic ?: currentValues.pic
-				it[Users.status] = status ?: currentValues.status
+			UsersTable.update({ UsersTable.id eq id }) {
+				it[UsersTable.displayName] = displayName ?: currentValues.displayName
+				it[UsersTable.email] = email ?: currentValues.email
+				it[UsersTable.passwordHash] = passwordHash ?: currentValues.passwordHash
+				it[UsersTable.pic] = pic ?: currentValues.pic
+				it[UsersTable.status] = status ?: currentValues.status
 			} > 0
 		}
 	
 	override suspend fun disableUser(id : UUID) : Boolean = dbQuery {
-		Users.update({ Users.id eq id }) {
+		UsersTable.update({ UsersTable.id eq id }) {
 			it[disabled] = true
 		} > 0
 	}
 	
 	override suspend fun enableUser(id : UUID) : Boolean = dbQuery {
-		Users.update({ Users.id eq id }) {
+		UsersTable.update({ UsersTable.id eq id }) {
 			it[disabled] = false
 		} > 0
 	}
 	
 	override suspend fun deleteUser(id : UUID) : Boolean = dbQuery {
-		Users.deleteWhere { Users.id eq id } > 0
+		UsersTable.deleteWhere { UsersTable.id eq id } > 0
 	}
 }
