@@ -1,5 +1,6 @@
 package app.web.commenter_api.utils
 
+import app.web.commenter_api.*
 import io.github.cdimascio.dotenv.*
 import io.jsonwebtoken.*
 import io.jsonwebtoken.security.Keys.hmacShaKeyFor
@@ -31,7 +32,7 @@ fun validateJWT(jwt : String) : UUID? {
 			.build()
 			.parseSignedClaims(jwt)
 			.payload["uid"] ?: throw InvalidDetailsException("JWT is invalid")
-		return UUID.fromString(uidString.toString())
+		return uidString.toString().toUUID()
 	} catch (e : ExpiredJwtException) {
 		return null
 	} catch (e : Exception) {
