@@ -42,7 +42,7 @@ fun Application.module() {
 		allowHost("localhost", schemes = listOf("https", "http")) // Allow localhost
 		allowHost("commenter--chat.web.app", schemes = listOf("https"))
 		allowHost("commenter--chat.firebaseapp.com", schemes = listOf("https"))
-		methods.addAll(setOf(HttpMethod.Get, HttpMethod.Post, HttpMethod.Delete))
+		methods.addAll(setOf(HttpMethod.Get, HttpMethod.Post))
 	}
 	
 	install(ContentNegotiation) {
@@ -130,7 +130,7 @@ fun Application.module() {
 				call.respond(
 					status = HttpStatusCode.allStatusCodes.single { it.value == cause.message!!.split(": ")[0].toInt() },
 					message = EmptyResponse(
-						message = cause.message!!.split(": ")[1],
+						message = cause.message!!.split(": ")[1].split(". Expected")[0],
 						code = cause.message!!.split(": ")[0].toInt(),
 					),
 				)
@@ -154,6 +154,9 @@ fun Application.module() {
 	}
 	
 	val userDao = UserDaoImpl()
+	val friendsDao = FriendsDaoImpl()
+	val friendRequestDao = FriendRequestDaoImpl()
+	val blockedUsersDao = BlockedUsersDaoImpl()
 	DatabaseFactory.init()
-	configureRouting(userDao = userDao)
+	configureRouting(userDao, friendsDao, friendRequestDao, blockedUsersDao)
 }

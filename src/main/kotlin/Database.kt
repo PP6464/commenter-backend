@@ -6,9 +6,12 @@ import kotlinx.coroutines.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.*
 import org.jetbrains.exposed.sql.transactions.experimental.*
+import java.util.*
 
 suspend fun <T> dbQuery(block: suspend () -> T): T =
 	newSuspendedTransaction(Dispatchers.IO) { block() }
+
+fun String.toUUID() : UUID = UUID.fromString(this)
 
 object DatabaseFactory {
 	fun init() {
@@ -22,7 +25,11 @@ object DatabaseFactory {
 		)
 		
 		transaction (database) {
-			SchemaUtils.create(Users)
+			SchemaUtils.create(UsersTable)
+			SchemaUtils.create(FriendsTable)
+			SchemaUtils.create(FriendsUsersTable)
+			SchemaUtils.create(FriendRequestTable)
+			SchemaUtils.create(BlockedUsersTable)
 		}
 	}
 }

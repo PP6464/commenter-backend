@@ -25,3 +25,21 @@ data class ProfileUpdateBody(
 	val status: String? = null,
 	val hasPicFile : Boolean = false
 )
+
+@Serializable
+data class FriendRequestBody(
+	val from : String,
+	val to : String,
+)
+
+@Serializable
+data class BlockUserBody(
+	val from : String,
+	val to : String,
+)
+
+@Serializable
+data class DeleteFriendBody(
+	val user1 : String,
+	val user2 : String,
+)
