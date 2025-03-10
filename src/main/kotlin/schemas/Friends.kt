@@ -5,7 +5,6 @@ import kotlinx.serialization.*
 import org.jetbrains.exposed.dao.id.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 
 @Serializable
 data class FriendRequest(
